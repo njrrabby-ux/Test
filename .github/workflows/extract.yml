@@ -1,0 +1,43 @@
+
+name: Extract NJR RABBY ZIP
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**.zip'
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Find ZIP File
+        run: |
+          ZIP_FILE=$(find . -maxdepth 3 -type f -iname "*.zip" -not -path "./.git/*" | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERROR: No ZIP file found!"
+            find . -maxdepth 3 -type f
+            exit 1
+          fi
+          echo "Found ZIP: $ZIP_FILE"
+          echo "ZIP_FILE=$ZIP_FILE" >> $GITHUB_ENV
+
+      - name: Extract Website
+        run: |
+          mkdir -p extracted
+          unzip -o "$ZIP_FILE" -d extracted
+
+      - name: Save Extracted Files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add extracted/
+          git commit -m "Extract NJR RABBY website" || echo "No changes"
+          git push
